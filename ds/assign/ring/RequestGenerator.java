@@ -14,12 +14,16 @@ public class RequestGenerator implements Runnable {
     private final PoissonProcess poissonProcess;
 
     private final int localPort;
+    private final Server server;
 
-    public RequestGenerator(String host, Logger logger, PoissonProcess poissonProcess,int localPort) {
+
+    public RequestGenerator(String host, Logger logger, PoissonProcess poissonProcess,int localPort,Server server) {
         this.host = host;
         this.logger = logger;
         this.poissonProcess = poissonProcess;
         this.localPort=localPort;
+        this.server=server;
+
     }
 
     @Override
@@ -30,6 +34,10 @@ public class RequestGenerator implements Runnable {
                 Thread.sleep((long) interArrivalTime);
                 String request = generateRandomRequest();
                 sendRequestToServer(request,localPort);
+                synchronized (request){
+                    server.addOperations(request);
+                }
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -47,7 +55,7 @@ public class RequestGenerator implements Runnable {
         double arg1 = random.nextDouble() * 100;
         double arg2 = random.nextDouble() * 100;
 
-        String request = String.format("%s %.2f %.2f", operation, arg1, arg2).replace(',', '.');
+        String request = String.format("%s:%.2f:%.2f", operation, arg1, arg2).replace(',', '.');
 
         return request;
     }
