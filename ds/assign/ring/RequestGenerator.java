@@ -29,7 +29,7 @@ public class RequestGenerator implements Runnable {
     @Override
     public void run() {
         while (true) {
-            double interArrivalTime = poissonProcess.timeForNextEvent() * 1000; // Converting to milliseconds
+            double interArrivalTime = poissonProcess.timeForNextEvent() * 1000*60; // Converting to milliseconds
             try {
                 Thread.sleep((long) interArrivalTime);
                 String request = generateRandomRequest();
@@ -65,12 +65,14 @@ public class RequestGenerator implements Runnable {
         String serverAddress = "localhost";
 
 
-        try (Socket socket = new Socket(serverAddress, serverPort);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
+        try {
+            Socket socket = new Socket(serverAddress, serverPort);
+
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
 
-            out.println(request);
-            out.flush();
+                out.println(request);
+                out.flush();
 
         } catch (IOException e) {
             e.printStackTrace();
