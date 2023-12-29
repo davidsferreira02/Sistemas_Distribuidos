@@ -57,10 +57,10 @@ public class RequestGenerator implements Runnable {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
-                wordsList.add(line.trim()); //
+                wordsList.add(line.trim());
             }
         } catch (IOException e) {
-            System.out.print("erro");
+
             e.printStackTrace();
         }
     }
@@ -80,14 +80,10 @@ public class RequestGenerator implements Runnable {
 
    private void sendRequestToServer(String request,int serverPort) {
         String serverAddress = "localhost";
-
-
         try {
             Socket socket = new Socket(serverAddress, serverPort);
 
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
-
                 out.println(request);
                 out.flush();
 
