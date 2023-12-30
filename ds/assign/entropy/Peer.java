@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.List;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -20,11 +21,16 @@ public class Peer {
     Logger logger;
     PoissonProcess poissonProcess;
 
+    int port;
+    List<PeerConnection> connections;
 
-    public Peer(String hostname) {
+
+    public Peer(String hostname, int port,List<PeerConnection> connections) {
         host = hostname;
+        this.port = port;
         Random rng = new Random();
         double lambda = 10.0;
+        this.connections=connections;
 
 
         logger = Logger.getLogger("logfile");
@@ -40,15 +46,27 @@ public class Peer {
     }
 
     public static void main(String[] args) throws Exception {
-        Peer peer = new Peer(args[0]);
+        if (args.length < 4 || (args.length - 2) % 2 != 0) {
+            System.out.println("Uso: java Peer <host> <port> <peer1_host> <peer1_port> [<peer2_host> <peer2_port> ...]");
+            return;
+        }
+
+
+        List<PeerConnection> connections = new ArrayList<>();
+        for (int i = 2; i < args.length; i += 2) {
+            String peerHost = args[i];
+            int peerPort = Integer.parseInt(args[i + 1]);
+            connections.add(new PeerConnection(peerHost, peerPort));
+        }
+        Peer peer = new Peer(args[0], Integer.parseInt(args[1]),connections);
         System.out.printf("new peer @ host=%s\n", args[0]);
-        Server server = new Server(args[0], Integer.parseInt(args[1]), peer.logger, args[2], Integer.parseInt(args[3]), peer.poissonProcess);
+        Server server = new Server(args[0], Integer.parseInt(args[1]), peer.logger, connections, peer.poissonProcess);
         new Thread(server).start();
         RequestGenerator requestGenerator = new RequestGenerator(args[0], peer.logger, peer.poissonProcess, Integer.parseInt(args[1]), server);
         new Thread(requestGenerator).start();
 
-
     }
+
 
 
 }
@@ -68,18 +86,18 @@ class Server implements Runnable {
 
     Set<String> words3 = new LinkedHashSet<>();
 
-    String hostNext;
-    int portNext;
+    List<PeerConnection> neighbors;
+
+
     PoissonProcess poissonProcess;
 
 
-    public Server(String host, int port, Logger logger, String hostNext, int portNext, PoissonProcess poissonProcess) throws Exception {
+    public Server(String host, int port, Logger logger, List<PeerConnection> neighbors, PoissonProcess poissonProcess) throws Exception {
         this.host = host;
         this.port = port;
         this.logger = logger;
         server = new ServerSocket(port, 1, InetAddress.getByName(host));
-        this.hostNext = hostNext;
-        this.portNext = portNext;
+      this.neighbors=neighbors;
         this.poissonProcess = poissonProcess;
 
 
@@ -111,6 +129,16 @@ class Server implements Runnable {
     }
 
 
+    public PeerConnection getRandomNeighbor() {
+        if (neighbors.isEmpty()) {
+            return null;
+        }
+        Random random = new Random();
+        int index = random.nextInt(neighbors.size());
+        return neighbors.get(index);
+    }
+
+
     @Override
     public void run() {
 
@@ -124,12 +152,12 @@ class Server implements Runnable {
 
                 Object obj = in.readObject();
                 words3 = objectToQueue(obj);
-
+                System.out.println("Mensagem do client " + words3);
 
                 words2 = merge(words2, words3);
 
 
-                System.out.println("Mensagem do client " + words2);
+
 
 
                 String clientAddress = client.getInetAddress().getHostAddress();
@@ -151,7 +179,8 @@ class Server implements Runnable {
             double interArrivalTime = poissonProcess.timeForNextEvent() * 1000 * 60;
             try {
                 Thread.sleep((long) interArrivalTime);
-                Socket socket = new Socket(hostNext, portNext);
+                PeerConnection neighbor=getRandomNeighbor();
+                Socket socket = new Socket(neighbor.getHost(), neighbor.getPort());
 
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
 
