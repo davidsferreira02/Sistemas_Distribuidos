@@ -2,8 +2,6 @@ package ds.assign.chat;
 
 
 
-import ds.assign.chat.Peer;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -21,18 +19,17 @@ public class RequestGenerator implements Runnable {
     private final int localPort;
     private final Server server;
 
-    private final Peer peer;
-
     private ArrayList<String> wordsList;
 
+    private LamportClock clock=new LamportClock(0);
 
-    public RequestGenerator(String host, Logger logger, PoissonProcess poissonProcess, int localPort, Server server, Peer peer) {
+
+    public RequestGenerator(String host, Logger logger, PoissonProcess poissonProcess, int localPort,Server server) {
         this.host = host;
         this.logger = logger;
         this.poissonProcess = poissonProcess;
         this.localPort=localPort;
         this.server=server;
-        this.peer=peer;
         wordsList = new ArrayList<>();
         loadWordsFromFile("ds/assign/chat/dictionary.txt");
     }
@@ -44,7 +41,7 @@ public class RequestGenerator implements Runnable {
             try {
                 Thread.sleep((long) interArrivalTime);
                 String request = generateRandomRequest();
-                sendRequestToServer(request,localPort, peer.lamportClock);
+                sendRequestToServer(request,localPort);
                 synchronized (request){
                     server.addWords(request);
 
@@ -83,16 +80,15 @@ public class RequestGenerator implements Runnable {
     }
 
 
-   private void sendRequestToServer(String request,int serverPort,int time) {
+   private void sendRequestToServer(String request,int serverPort) {
         String serverAddress = "localhost";
         try {
             Socket socket = new Socket(serverAddress, serverPort);
 
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
-             String message=request + "Time : " + time;
-                out.println(message);
+                out.println(request);
                 out.flush();
+               clock.increment();
 
         } catch (IOException e) {
             e.printStackTrace();

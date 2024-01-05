@@ -152,7 +152,7 @@ class Server implements Runnable {
 
                 Object obj = in.readObject();
                 words3 = objectToQueue(obj);
-                System.out.println("Mensagem do client " + words3);
+                System.out.println("Message from client " + words3);
 
                 words2 = merge(words2, words3);
 

@@ -1,6 +1,5 @@
 package ds.assign.entropy;
 
-import ds.assign.entropy.PoissonProcess;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

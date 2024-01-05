@@ -60,6 +60,7 @@ class Server implements Runnable {
     Queue<String> operations = new LinkedList<>();
     String hostNext;
     int portNext;
+    String receivedToken;
 
 
     public Server(String host, int port, Logger logger, String hostNext, int portNext) throws Exception {
@@ -87,7 +88,8 @@ class Server implements Runnable {
                 Socket client = server.accept();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                String receivedToken = in.readLine();
+                receivedToken = in.readLine();
+
 
 
                 String clientAddress = client.getInetAddress().getHostAddress();
@@ -96,34 +98,36 @@ class Server implements Runnable {
                 io.printStackTrace();
             }
 
-            synchronized (operations) {
+            if (receivedToken != null && receivedToken.equals("token")) {
+                synchronized (operations) {
 
-                while (!operations.isEmpty()) {
-                    try {
-                        String req = operations.poll();
-                        Socket socket = new Socket("localhost", 3000);
-                        PrintWriter outCalc = new PrintWriter(socket.getOutputStream(), true);
-                        BufferedReader inCalc = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        outCalc.println(req);
-                        outCalc.flush();
-                        String result = inCalc.readLine();
-                        System.out.println("Result from operation " + req + " = " + result);
-                        System.out.flush();
-                        socket.close();
-                    } catch (IOException io) {
-                        io.printStackTrace();
+                    while (!operations.isEmpty()) {
+                        try {
+                            String req = operations.poll();
+                            Socket socket = new Socket("localhost", 3000);
+                            PrintWriter outCalc = new PrintWriter(socket.getOutputStream(), true);
+                            BufferedReader inCalc = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                            outCalc.println(req);
+                            outCalc.flush();
+                            String result = inCalc.readLine();
+                            System.out.println("Result from operation " + req + " = " + result);
+                            System.out.flush();
+                            socket.close();
+                        } catch (IOException io) {
+                            io.printStackTrace();
+                        }
                     }
                 }
-            }
 
-            try {
-                Socket socket = new Socket(hostNext, portNext);
-                PrintWriter outNext = new PrintWriter(socket.getOutputStream(), true);
-                outNext.println("token");
-                outNext.flush();
-                socket.close();
-            } catch (IOException io) {
-                io.printStackTrace();
+                try {
+                    Socket socket = new Socket(hostNext, portNext);
+                    PrintWriter outNext = new PrintWriter(socket.getOutputStream(), true);
+                    outNext.println("token");
+                    outNext.flush();
+                    socket.close();
+                } catch (IOException io) {
+                    io.printStackTrace();
+                }
             }
         }
     }

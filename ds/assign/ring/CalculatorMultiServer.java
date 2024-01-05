@@ -11,8 +11,8 @@ import java.util.Scanner;
 public class CalculatorMultiServer {
     private ServerSocket server;
 
-    public CalculatorMultiServer(String ipAddress) throws Exception {
-        this.server = new ServerSocket(3000, 1, InetAddress.getByName(ipAddress));
+    public CalculatorMultiServer(String ipAddress,int port) throws Exception {
+        this.server = new ServerSocket(port, 1, InetAddress.getByName(ipAddress));
 
     }
 
@@ -34,7 +34,7 @@ public class CalculatorMultiServer {
     }
 
     public static void main(String[] args) throws Exception {
-        CalculatorMultiServer app = new CalculatorMultiServer(args[0]);
+        CalculatorMultiServer app = new CalculatorMultiServer(args[0],Integer.parseInt(args[1]));
         System.out.printf("\r\nrunning server: host=%s @ port=%d\n",
                 app.getSocketAddress().getHostAddress(), app.getPort());
         app.listen();
